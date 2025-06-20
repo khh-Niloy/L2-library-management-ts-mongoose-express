@@ -4,7 +4,7 @@ export const app = express();
 
 app.use(express.json());
 
-app.use("/books", bookRouter);
+app.use("/api", bookRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Library Management API");
