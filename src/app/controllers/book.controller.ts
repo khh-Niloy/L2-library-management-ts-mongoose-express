@@ -14,6 +14,33 @@ const createBookZodSchema = z.object({
   available: z.boolean(),
 });
 
+bookRouter.get("/books", async (req: Request, res: Response) => {
+  const {
+    filter,
+    sortBy = "createdAt",
+    sort = "asc",
+    limit = "10",
+  } = req.query;
+
+  const sortOrder = sort === "asc" ? 1 : -1;
+  const limitInt = parseInt(limit as string);
+
+  let data;
+  if (req.query) {
+    data = await Book.aggregate([
+      { $match: { genre: filter } },
+      { $sort: { [sortBy as string]: sortOrder } },
+      { $limit: limitInt },
+    ]);
+  }
+  data = await Book.find({});
+
+  res.json({
+    query: { filter, sortBy, sort, limit },
+    books: data,
+  });
+});
+
 bookRouter.post("/create-book", async (req: Request, res: Response) => {
   try {
     const body = req.body;
