@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IBook } from "../interfaces/books.interface";
+import { IAvailability, IBook } from "../interfaces/books.interface";
 
 const categoryList = [
   "FICTION",
@@ -35,4 +35,18 @@ const bookSchema = new Schema<IBook>(
   }
 );
 
-export const Book = model("Book", bookSchema);
+bookSchema.static(
+  "updateAvailability",
+  async function updateAvailability(bookInfo) {
+    console.log(bookInfo);
+    // return "testing";
+    console.log(bookInfo.copies);
+    if (bookInfo.copies === 0) {
+      await this.findByIdAndUpdate(bookInfo._id, {
+        available: false,
+      });
+    }
+  }
+);
+
+export const Book = model<IBook, IAvailability>("Book", bookSchema);
