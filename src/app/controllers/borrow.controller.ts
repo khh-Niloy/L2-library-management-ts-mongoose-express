@@ -44,10 +44,40 @@ borrowRouter.post("/borrow", async (req: Request, res: Response) => {
 
 borrowRouter.get("/borrow", async (req: Request, res: Response) => {
   try {
+    const updatedData = await Borrow.aggregate([
+      {
+        $lookup: {
+          from: "books",
+          localField: "book",
+          foreignField: "_id",
+          as: "bookInfo",
+        },
+      },
+      { $unwind: "$bookInfo" },
+      {
+        $group: {
+          _id: "$book",
+          title: { $first: "$bookInfo.title" },
+          isbn: { $first: "$bookInfo.isbn" },
+          total: { $sum: "$quantity" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          book: {
+            title: "$title",
+            isbn: "$isbn",
+          },
+          totalQuantity: "$total",
+        },
+      },
+    ]);
+
     res.json({
       success: true,
       message: "Book borrowed successfully",
-      // data: updatedData,
+      data: updatedData,
     });
   } catch (error) {
     res.send(error);
