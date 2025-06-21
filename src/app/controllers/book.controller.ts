@@ -1,20 +1,33 @@
 import express, { Request, Response } from "express";
 import { z } from "zod";
 import { Book } from "../models/books.models";
+import { errorResponseApi, successResponseApi } from "../utils/apiResponse";
 
 export const bookRouter = express.Router();
 
 const createBookZodSchema = z.object({
-  title: z.string(),
-  author: z.string(),
-  genre: z.string(),
+  title: z.string().min(1, "Title is required"),
+  author: z.string().min(1, "Author is required"),
+  genre: z.enum([
+    "FICTION",
+    "NON_FICTION",
+    "SCIENCE",
+    "HISTORY",
+    "BIOGRAPHY",
+    "FANTASY",
+  ]),
   isbn: z.string(),
-  description: z.string(),
-  copies: z.number(),
-  available: z.boolean(),
+  description: z.string().optional(),
+  copies: z
+    .number({
+      required_error: "number of copies is required",
+      invalid_type_error: "Must be a number",
+    })
+    .nonnegative("Can not be negative"),
+  available: z.boolean().default(true),
 });
 
-bookRouter.get("/books", async (req: Request, res: Response) => {
+bookRouter.get("/", async (req: Request, res: Response) => {
   try {
     const {
       filter,
@@ -37,7 +50,8 @@ bookRouter.get("/books", async (req: Request, res: Response) => {
     data = await Book.find({});
 
     res.json({
-      query: { filter, sortBy, sort, limit },
+      success: true,
+      message: "Books retrieved successfully",
       books: data,
     });
   } catch (error: any) {
@@ -50,7 +64,7 @@ bookRouter.get("/books", async (req: Request, res: Response) => {
   }
 });
 
-bookRouter.get("/books/:bookId", async (req: Request, res: Response) => {
+bookRouter.get("/:bookId", async (req: Request, res: Response) => {
   try {
     const id = req.params.bookId;
 
@@ -71,22 +85,18 @@ bookRouter.get("/books/:bookId", async (req: Request, res: Response) => {
   }
 });
 
-bookRouter.post("/create-book", async (req: Request, res: Response) => {
+bookRouter.post("/", async (req: Request, res: Response) => {
   try {
     const body = req.body;
     const validateFromZod = await createBookZodSchema.parseAsync(body);
     const insertedBook = await Book.create(validateFromZod);
-    res.json({
-      success: true,
-      message: "Book created successfully",
-      data: insertedBook,
-    });
-  } catch (error) {
-    res.send(error);
+    successResponseApi(res, "Book created successfully", insertedBook);
+  } catch (error: any) {
+    errorResponseApi(res, "failed to create book in db", error);
   }
 });
 
-bookRouter.put("/books/:bookId", async (req: Request, res: Response) => {
+bookRouter.put("/:bookId", async (req: Request, res: Response) => {
   try {
     const id = req.params.bookId;
     const updatedInfo = req.body;
@@ -105,7 +115,7 @@ bookRouter.put("/books/:bookId", async (req: Request, res: Response) => {
   }
 });
 
-bookRouter.delete("/books/:bookId", async (req: Request, res: Response) => {
+bookRouter.delete("/:bookId", async (req: Request, res: Response) => {
   const id = req.params.bookId;
   await Book.findByIdAndDelete(id);
 

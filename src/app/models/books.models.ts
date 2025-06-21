@@ -26,7 +26,11 @@ const bookSchema = new Schema<IBook>(
     },
     isbn: { type: String, unique: true, required: [true, "isbn is required"] },
     description: { type: String },
-    copies: { type: Number, required: [true, "number of copies is required"] },
+    copies: {
+      type: Number,
+      required: [true, "number of copies is required"],
+      min: [0, "Total copies must be positive"],
+    },
     available: { type: Boolean, default: true },
   },
   {
@@ -38,9 +42,6 @@ const bookSchema = new Schema<IBook>(
 bookSchema.static(
   "updateAvailability",
   async function updateAvailability(bookInfo) {
-    console.log(bookInfo);
-    // return "testing";
-    console.log(bookInfo.copies);
     if (bookInfo.copies === 0) {
       await this.findByIdAndUpdate(bookInfo._id, {
         available: false,

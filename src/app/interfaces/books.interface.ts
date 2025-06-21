@@ -12,8 +12,8 @@ export interface IBook {
     | "FANTASY";
   isbn: string;
   description: string;
-  copies: Number;
-  available: Boolean;
+  copies: number;
+  available: boolean;
 }
 
 export interface IAvailability extends Model<IBook> {
