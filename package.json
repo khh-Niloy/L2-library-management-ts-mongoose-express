@@ -1,7 +1,7 @@
 {
   "name": "a3-ts-express-mongoose",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "server": "ts-node-dev --respawn --transpile-only src/server.ts",
