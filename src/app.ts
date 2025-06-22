@@ -9,5 +9,5 @@ app.use("/api/books", bookRouter);
 app.use("/api/borrow", borrowRouter);
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to Library Management API");
+  res.send("Welcome to Library Management api");
 });
