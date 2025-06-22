@@ -1,7 +1,8 @@
-import { model, Schema } from "mongoose";
+import { HydratedDocument, model, Schema } from "mongoose";
 import { IBorrow } from "../interfaces/borrow.interface";
+import { Book } from "./books.models";
 
-const BorrowSchema = new Schema<IBorrow>(
+const borrowSchema = new Schema<IBorrow>(
   {
     book: {
       type: Schema.Types.ObjectId,
@@ -16,4 +17,11 @@ const BorrowSchema = new Schema<IBorrow>(
   }
 );
 
-export const Borrow = model("Borrow", BorrowSchema);
+borrowSchema.post("save", async function (doc) {
+  if (doc) {
+    const book = await Book.findById(doc.book);
+    await Book.updateAvailability(book);
+  }
+});
+
+export const Borrow = model("Borrow", borrowSchema);

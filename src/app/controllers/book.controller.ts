@@ -50,12 +50,6 @@ bookRouter.get("/", async (req: Request, res: Response) => {
     successResponseApi(res, 200, "Books retrieved successfully", data);
   } catch (error: any) {
     errorResponseApi(res, 404, "failed to retrieve book", error);
-    // const { message, name, ...otherInfo } = error;
-    // res.json({
-    //   errorMessage: message,
-    //   errorName: name,
-    //   others: otherInfo,
-    // });
   }
 });
 

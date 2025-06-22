@@ -3,6 +3,7 @@ import { Book } from "../models/books.models";
 import { Borrow } from "../models/borrow.models";
 import { errorResponseApi, successResponseApi } from "../utils/apiResponse";
 import { z } from "zod";
+import { Types } from "mongoose";
 export const borrowRouter = express.Router();
 
 const createBorrowZodSchema = z.object({
@@ -25,18 +26,18 @@ borrowRouter.post("/", async (req: Request, res: Response) => {
       throw new Error("Book not found");
     }
     if (quantity > bookInfo.copies) {
-      throw new Error(`sorry, ${quantity} copies not available`);
+      throw new Error(
+        `sorry, ${quantity} copies not available. Available: ${bookInfo.copies}`
+      );
     }
 
-    const updatedData = await Book.findByIdAndUpdate(
-      book,
+    const updatedData = await Book.findOneAndUpdate(
+      { _id: new Types.ObjectId(book) },
       {
         $inc: { copies: -quantity },
       },
       { new: true }
     );
-    await Book.updateAvailability(updatedData);
-
     const borrowBookCreatedInfo = await Borrow.create(body);
 
     successResponseApi(
