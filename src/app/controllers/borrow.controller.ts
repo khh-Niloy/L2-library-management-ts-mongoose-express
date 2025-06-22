@@ -1,23 +1,31 @@
 import express, { Request, Response } from "express";
 import { Book } from "../models/books.models";
 import { Borrow } from "../models/borrow.models";
+import { errorResponseApi, successResponseApi } from "../utils/apiResponse";
+import { z } from "zod";
 export const borrowRouter = express.Router();
 
-borrowRouter.post("/borrow", async (req: Request, res: Response) => {
+const createBorrowZodSchema = z.object({
+  book: z.string().min(1, "Book ID is required"),
+  quantity: z.number().positive("Positive number please"),
+  dueDate: z.string().min(1, "Due date is required"),
+});
+
+borrowRouter.post("/", async (req: Request, res: Response) => {
   try {
     const body = req.body;
-    const { book, quantity, dueDate } = body;
+
+    const validateFromZod = await createBorrowZodSchema.parseAsync(body);
+
+    const { book, quantity, dueDate } = validateFromZod;
 
     const bookInfo = await Book.findById(book);
 
     if (!bookInfo) {
       throw new Error("Book not found");
-      //   return res.json({ message: "Book not found" });
     }
-
     if (quantity > bookInfo.copies) {
       throw new Error(`sorry, ${quantity} copies not available`);
-      //   return res.json({ message: `sorry, ${quantity} copies not available` });
     }
 
     const updatedData = await Book.findByIdAndUpdate(
@@ -27,24 +35,24 @@ borrowRouter.post("/borrow", async (req: Request, res: Response) => {
       },
       { new: true }
     );
-
     await Book.updateAvailability(updatedData);
 
     const borrowBookCreatedInfo = await Borrow.create(body);
 
-    res.json({
-      success: true,
-      message: "Book borrowed successfully",
-      data: borrowBookCreatedInfo,
-    });
+    successResponseApi(
+      res,
+      201,
+      "Book borrowed successfully",
+      borrowBookCreatedInfo
+    );
   } catch (error) {
-    res.send(error);
+    errorResponseApi(res, 404, "failed to Book borrowed operation", error);
   }
 });
 
-borrowRouter.get("/borrow", async (req: Request, res: Response) => {
+borrowRouter.get("/", async (req: Request, res: Response) => {
   try {
-    const updatedData = await Borrow.aggregate([
+    const mergedData = await Borrow.aggregate([
       {
         $lookup: {
           from: "books",
@@ -73,13 +81,18 @@ borrowRouter.get("/borrow", async (req: Request, res: Response) => {
         },
       },
     ]);
-
-    res.json({
-      success: true,
-      message: "Borrowed books summary retrieved successfully",
-      data: updatedData,
-    });
+    successResponseApi(
+      res,
+      200,
+      "Borrowed books summary retrieved successfully",
+      mergedData
+    );
   } catch (error) {
-    res.send(error);
+    errorResponseApi(
+      res,
+      404,
+      "failed to Borrowed books summary retrieved",
+      error
+    );
   }
 });
