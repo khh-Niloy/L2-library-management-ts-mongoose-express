@@ -39,49 +39,37 @@ bookRouter.get("/", async (req: Request, res: Response) => {
     const sortOrder = sort === "asc" ? 1 : -1;
     const limitInt = parseInt(limit as string);
 
-    let data;
-    if (req.query) {
-      data = await Book.aggregate([
-        { $match: { genre: filter } },
-        { $sort: { [sortBy as string]: sortOrder } },
-        { $limit: limitInt },
-      ]);
+    let query = {};
+    if (filter) {
+      query = { genre: filter };
     }
-    data = await Book.find({});
+    const data = await Book.find(query)
+      .sort({ [sortBy as string]: sortOrder })
+      .limit(limitInt);
 
-    res.json({
-      success: true,
-      message: "Books retrieved successfully",
-      books: data,
-    });
+    successResponseApi(res, 200, "Books retrieved successfully", data);
   } catch (error: any) {
-    const { message, name, ...otherInfo } = error;
-    res.json({
-      errorMessage: message,
-      errorName: name,
-      others: otherInfo,
-    });
+    errorResponseApi(res, 404, "failed to retrieve book", error);
+    // const { message, name, ...otherInfo } = error;
+    // res.json({
+    //   errorMessage: message,
+    //   errorName: name,
+    //   others: otherInfo,
+    // });
   }
 });
 
 bookRouter.get("/:bookId", async (req: Request, res: Response) => {
   try {
     const id = req.params.bookId;
-
     const singleBook = await Book.findById(id);
 
-    res.json({
-      success: true,
-      message: "Book retrieved successfully",
-      data: singleBook,
-    });
+    if (!singleBook) {
+      throw new Error("did not match the ID, not found");
+    }
+    successResponseApi(res, 200, "Book retrieved successfully", singleBook);
   } catch (error: any) {
-    const { message, name, ...otherInfo } = error;
-    res.json({
-      errorMessage: message,
-      errorName: name,
-      others: otherInfo,
-    });
+    errorResponseApi(res, 404, "failed to get single book", error);
   }
 });
 
@@ -90,9 +78,9 @@ bookRouter.post("/", async (req: Request, res: Response) => {
     const body = req.body;
     const validateFromZod = await createBookZodSchema.parseAsync(body);
     const insertedBook = await Book.create(validateFromZod);
-    successResponseApi(res, "Book created successfully", insertedBook);
+    successResponseApi(res, 201, "Book created successfully", insertedBook);
   } catch (error: any) {
-    errorResponseApi(res, "failed to create book in db", error);
+    errorResponseApi(res, 400, "failed to create book in db", error);
   }
 });
 
@@ -105,23 +93,26 @@ bookRouter.put("/:bookId", async (req: Request, res: Response) => {
       new: true,
     });
 
-    res.json({
-      success: true,
-      message: "Book updated successfully",
-      data: updateBookInfo,
-    });
+    if (!updateBookInfo) {
+      throw new Error("id did not match, not found");
+    }
+
+    successResponseApi(res, 200, "Book updated successfully", updateBookInfo);
   } catch (error) {
-    res.send(error);
+    errorResponseApi(res, 400, "failed to update book info", error);
   }
 });
 
 bookRouter.delete("/:bookId", async (req: Request, res: Response) => {
-  const id = req.params.bookId;
-  await Book.findByIdAndDelete(id);
+  try {
+    const id = req.params.bookId;
+    const deletedDoc = await Book.findByIdAndDelete(id);
 
-  res.json({
-    success: true,
-    message: "Book deleted successfully",
-    data: null,
-  });
+    if (!deletedDoc) {
+      throw new Error("id did not match, not found");
+    }
+    successResponseApi(res, 200, "Book deleted successfully", null);
+  } catch (error) {
+    errorResponseApi(res, 404, "failed to delete book", error);
+  }
 });
