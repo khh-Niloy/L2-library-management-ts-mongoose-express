@@ -7,8 +7,8 @@ const cors = require("cors");
 app.use(express.json());
 app.use(
   cors({
-    origin: ["*"],
-    credentials: true,
+    origin: ["http://localhost:5173", "https://a4-redux-ts-express-mongoose.vercel.app"],
+    credentials: true, // optional, only if you're sending cookies
   })
 );
 
